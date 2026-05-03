@@ -51,7 +51,7 @@ export async function apiFetch(url: string, options: RequestInit = {}) {
   const fullUrl = url.startsWith('http') ? url : `${API_URL}${url}`
   const token = localStorage.getItem('token')
   
-  const headers: HeadersInit = {
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...options.headers,
   }
