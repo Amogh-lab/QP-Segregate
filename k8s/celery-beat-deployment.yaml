@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: celery-beat
+  namespace: qpaper
+  labels:
+    app: qpaper-ai
+    component: celery-beat
+spec:
+  # CRITICAL: Must always be exactly 1 replica.
+  # celery-beat is a scheduler — running multiple instances
+  # causes duplicate task firing. Never scale this up.
+  replicas: 1
+  selector:
+    matchLabels:
+      app: qpaper-ai
+      component: celery-beat
+  strategy:
+    # Recreate (not RollingUpdate) — ensures only 1 instance ever runs
+    # even during deployments
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: qpaper-ai
+        component: celery-beat
+    spec:
+      containers:
+        - name: celery-beat
+          image: PLACEHOLDER_BACKEND_IMAGE    # Same image — different command
+          command:
+            - celery
+            - -A
+            - app.tasks.celery
+            - beat
+            - --loglevel=info
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          envFrom:
+            - configMapRef:
+                name: qpaper-config
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: qpaper-secrets
+                  key: DATABASE_URL
+            - name: MONGODB_URL
+              valueFrom:
+                secretKeyRef:
+                  name: qpaper-secrets
+                  key: MONGODB_URL
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: qpaper-secrets
+                  key: REDIS_URL
+            - name: JWT_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: qpaper-secrets
+                  key: JWT_SECRET_KEY
+      restartPolicy: Always

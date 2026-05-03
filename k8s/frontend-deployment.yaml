@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: qpaper
+  labels:
+    app: qpaper-ai
+    component: frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: qpaper-ai
+      component: frontend
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: qpaper-ai
+        component: frontend
+    spec:
+      containers:
+        - name: frontend
+          # NEXT_PUBLIC_API_URL is baked into this image at build time (Docker build-arg)
+          # See .github/workflows/ci-cd.yml for how it's passed during docker build
+          image: PLACEHOLDER_FRONTEND_IMAGE
+          ports:
+            - containerPort: 3000
+          command: ["npm", "start"]
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          env:
+            - name: NODE_ENV
+              value: "production"
+            # NEXT_PUBLIC_API_URL is baked into the image at build time — not set here
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 3
+      restartPolicy: Always

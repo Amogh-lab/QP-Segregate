@@ -1,0 +1,77 @@
+# Requires: AWS Load Balancer Controller installed on the cluster
+# Install with: helm install aws-load-balancer-controller eks/aws-load-balancer-controller
+#   -n kube-system --set clusterName=<your-cluster-name>
+#
+# Routing:
+#   /api/*       → backend-service:8000   (FastAPI REST endpoints)
+#   /storage/*   → backend-service:8000   (Static file serving)
+#   /health      → backend-service:8000   (Health check)
+#   /docs        → backend-service:8000   (FastAPI Swagger UI)
+#   /*           → frontend-service:3000  (Next.js app — catch-all)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: qpaper-ingress
+  namespace: qpaper
+  labels:
+    app: qpaper-ai
+  annotations:
+    # Tells AWS LB Controller to create an Application Load Balancer (ALB)
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing   # Public ALB
+    alb.ingress.kubernetes.io/target-type: ip           # Route directly to pod IPs
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
+
+    # Health check path for the ALB target groups
+    alb.ingress.kubernetes.io/healthcheck-path: /health
+    alb.ingress.kubernetes.io/healthcheck-interval-seconds: "30"
+    alb.ingress.kubernetes.io/healthcheck-timeout-seconds: "5"
+    alb.ingress.kubernetes.io/healthy-threshold-count: "2"
+    alb.ingress.kubernetes.io/unhealthy-threshold-count: "3"
+
+    # Enable access logs (optional but useful for debugging)
+    # alb.ingress.kubernetes.io/load-balancer-attributes: access_logs.s3.enabled=true,access_logs.s3.bucket=<your-bucket>
+
+spec:
+  rules:
+    - http:
+        paths:
+          # API routes → backend
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: backend-service
+                port:
+                  number: 8000
+          # Static storage files → backend
+          - path: /storage
+            pathType: Prefix
+            backend:
+              service:
+                name: backend-service
+                port:
+                  number: 8000
+          # FastAPI health & docs → backend
+          - path: /health
+            pathType: Exact
+            backend:
+              service:
+                name: backend-service
+                port:
+                  number: 8000
+          - path: /docs
+            pathType: Prefix
+            backend:
+              service:
+                name: backend-service
+                port:
+                  number: 8000
+          # Everything else → frontend (Next.js)
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend-service
+                port:
+                  number: 3000

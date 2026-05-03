@@ -1,0 +1,130 @@
+# kube-prometheus-stack Helm values for QPaper AI monitoring
+# Install with:
+#   helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+#   helm repo update
+#   helm install monitoring prometheus-community/kube-prometheus-stack \
+#     -f monitoring/kube-prometheus-values.yaml \
+#     -n monitoring --create-namespace
+
+# ── Prometheus config ──────────────────────────────────────────────────────
+prometheus:
+  prometheusSpec:
+    # Keep 15 days of metrics
+    retention: 15d
+    # Persistent storage for Prometheus data
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: gp2    # AWS EKS default storage class
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 20Gi
+
+    # Scrape ALL namespaces (not just monitoring)
+    podMonitorNamespaceSelector: {}
+    podMonitorSelector: {}
+    serviceMonitorNamespaceSelector: {}
+    serviceMonitorSelector: {}
+
+    # Additional scrape config for the FastAPI /metrics endpoint
+    # (FastAPI doesn't expose /metrics by default — add prometheus-fastapi-instrumentator
+    #  to requirements.txt if you want custom app metrics)
+    additionalScrapeConfigs:
+      - job_name: 'qpaper-backend'
+        static_configs:
+          - targets: ['backend-service.qpaper.svc.cluster.local:8000']
+        metrics_path: /metrics
+        scrape_interval: 30s
+
+    # Alerting rules for QPaper
+    additionalRulesForClusterRole: []
+
+  # Expose Prometheus internally via ClusterIP
+  service:
+    type: ClusterIP
+
+# ── Grafana config ────────────────────────────────────────────────────────
+grafana:
+  enabled: true
+
+  # Admin credentials — change these!
+  adminUser: admin
+  adminPassword: qpaper-grafana-admin   # Change this
+
+  # Persistent storage for dashboards/state
+  persistence:
+    enabled: true
+    storageClassName: gp2
+    size: 5Gi
+
+  # Auto-provision the QPaper custom dashboard
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+        - name: 'qpaper'
+          orgId: 1
+          folder: 'QPaper AI'
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards/qpaper
+
+  dashboardsConfigMaps:
+    qpaper: "qpaper-grafana-dashboard"
+
+  # Grafana plugins
+  plugins:
+    - grafana-piechart-panel
+
+  # Expose Grafana with ClusterIP (access via kubectl port-forward)
+  service:
+    type: ClusterIP
+    port: 80
+
+  # Default datasource — Prometheus (auto-configured)
+  datasources:
+    datasources.yaml:
+      apiVersion: 1
+      datasources:
+        - name: Prometheus
+          type: prometheus
+          url: http://monitoring-kube-prometheus-prometheus:9090
+          access: proxy
+          isDefault: true
+
+# ── Alertmanager ────────────────────────────────────────────────────────
+alertmanager:
+  enabled: true
+  alertmanagerSpec:
+    storage:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: gp2
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 2Gi
+
+# ── Node exporter (host-level metrics) ──────────────────────────────────
+nodeExporter:
+  enabled: true
+
+# ── kube-state-metrics (K8s object metrics) ─────────────────────────────
+kubeStateMetrics:
+  enabled: true
+
+# ── Component toggles ────────────────────────────────────────────────────
+kubeControllerManager:
+  enabled: false   # Not accessible on managed EKS
+
+kubeScheduler:
+  enabled: false   # Not accessible on managed EKS
+
+kubeEtcd:
+  enabled: false   # Not accessible on managed EKS
+
+kubeProxy:
+  enabled: false   # Not accessible on managed EKS

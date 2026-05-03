@@ -291,3 +291,10 @@ dmypy.json
 # Pyre
 .pyre/
 
+# ── AWS / Kubernetes secrets (never commit real values) ──────────────────
+# The secret.yaml in this repo is a TEMPLATE only.
+# If you populate it with real values locally, git won't track it.
+# Real secrets must go in GitHub Actions Secrets only.
+k8s/secret.yaml
+iam_policy.json
+

@@ -1,0 +1,118 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: qpaper
+  labels:
+    app: qpaper-ai
+    component: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: qpaper-ai
+      component: backend
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0      # Always keep at least 2 healthy pods
+  template:
+    metadata:
+      labels:
+        app: qpaper-ai
+        component: backend
+    spec:
+      containers:
+        - name: backend
+          # Image is updated by CI/CD via: kubectl set image deployment/backend backend=<ecr-url>:<sha>
+          image: PLACEHOLDER_BACKEND_IMAGE
+          ports:
+            - containerPort: 8000
+          command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+            limits:
+              cpu: "1000m"
+              memory: "2Gi"
+          # Load all non-secret config from ConfigMap
+          envFrom:
+            - configMapRef:
+                name: qpaper-config
+          # Load secrets individually from K8s Secret
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: qpaper-secrets
+                  key: DATABASE_URL
+            - name: MONGODB_URL
+              valueFrom:
+                secretKeyRef:
+                  name: qpaper-secrets
+                  key: MONGODB_URL
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: qpaper-secrets
+                  key: REDIS_URL
+            - name: JWT_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: qpaper-secrets
+                  key: JWT_SECRET_KEY
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: qpaper-secrets
+                  key: AWS_ACCESS_KEY_ID
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: qpaper-secrets
+                  key: AWS_SECRET_ACCESS_KEY
+            - name: AWS_S3_BUCKET
+              valueFrom:
+                secretKeyRef:
+                  name: qpaper-secrets
+                  key: AWS_S3_BUCKET
+            - name: GOOGLE_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: qpaper-secrets
+                  key: GOOGLE_CLIENT_ID
+            - name: GOOGLE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: qpaper-secrets
+                  key: GOOGLE_CLIENT_SECRET
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: qpaper-secrets
+                  key: OPENAI_API_KEY
+                  optional: true
+            - name: PINECONE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: qpaper-secrets
+                  key: PINECONE_API_KEY
+                  optional: true
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 60   # Allow time for spaCy model to load
+            periodSeconds: 30
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 45
+            periodSeconds: 10
+            failureThreshold: 3
+      # Restart policy
+      restartPolicy: Always

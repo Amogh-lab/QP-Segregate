@@ -1,0 +1,42 @@
+---
+# Backend ClusterIP Service
+# Only reachable within the cluster — ALB Ingress routes external traffic to it
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+  namespace: qpaper
+  labels:
+    app: qpaper-ai
+    component: backend
+spec:
+  type: ClusterIP
+  selector:
+    app: qpaper-ai
+    component: backend
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000
+      protocol: TCP
+
+---
+# Frontend ClusterIP Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+  namespace: qpaper
+  labels:
+    app: qpaper-ai
+    component: frontend
+spec:
+  type: ClusterIP
+  selector:
+    app: qpaper-ai
+    component: frontend
+  ports:
+    - name: http
+      port: 3000
+      targetPort: 3000
+      protocol: TCP

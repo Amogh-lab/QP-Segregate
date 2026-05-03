@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: qpaper-config
+  namespace: qpaper
+  labels:
+    app: qpaper-ai
+data:
+  # JWT (non-secret algorithm config)
+  JWT_ALGORITHM: "HS256"
+  ACCESS_TOKEN_EXPIRE_MINUTES: "30"
+
+  # Processing thresholds
+  OCR_CONFIDENCE_THRESHOLD: "0.4"
+  CLASSIFICATION_CONFIDENCE_THRESHOLD: "0.7"
+  SIMILARITY_THRESHOLD: "0.85"
+  TEMP_UPLOAD_EXPIRE_HOURS: "24"
+
+  # Pagination
+  DEFAULT_PAGE_SIZE: "20"
+  MAX_PAGE_SIZE: "100"
+
+  # File storage paths (S3-backed)
+  UPLOAD_DIR: "storage/papers"
+  TEMP_UPLOAD_DIR: "tmp/uploads"
+  PAGE_IMAGES_DIR: "storage/page_images"
+
+  # OpenAI model
+  OPENAI_MODEL: "gpt-4o"

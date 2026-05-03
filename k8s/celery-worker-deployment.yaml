@@ -1,0 +1,110 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: celery-worker
+  namespace: qpaper
+  labels:
+    app: qpaper-ai
+    component: celery-worker
+spec:
+  replicas: 1         # HPA (hpa.yaml) will scale this up to 4 based on CPU
+  selector:
+    matchLabels:
+      app: qpaper-ai
+      component: celery-worker
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: qpaper-ai
+        component: celery-worker
+    spec:
+      containers:
+        - name: celery-worker
+          image: PLACEHOLDER_BACKEND_IMAGE    # Same image as backend — different command
+          command:
+            - celery
+            - -A
+            - app.tasks.celery
+            - worker
+            - --loglevel=info
+            - --concurrency=2
+          resources:
+            # Workers run OCR + ML models — needs more RAM
+            requests:
+              cpu: "1000m"
+              memory: "2Gi"
+            limits:
+              cpu: "2000m"
+              memory: "4Gi"
+          envFrom:
+            - configMapRef:
+                name: qpaper-config
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: qpaper-secrets
+                  key: DATABASE_URL
+            - name: MONGODB_URL
+              valueFrom:
+                secretKeyRef:
+                  name: qpaper-secrets
+                  key: MONGODB_URL
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: qpaper-secrets
+                  key: REDIS_URL
+            - name: JWT_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: qpaper-secrets
+                  key: JWT_SECRET_KEY
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: qpaper-secrets
+                  key: AWS_ACCESS_KEY_ID
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: qpaper-secrets
+                  key: AWS_SECRET_ACCESS_KEY
+            - name: AWS_S3_BUCKET
+              valueFrom:
+                secretKeyRef:
+                  name: qpaper-secrets
+                  key: AWS_S3_BUCKET
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: qpaper-secrets
+                  key: OPENAI_API_KEY
+                  optional: true
+            - name: PINECONE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: qpaper-secrets
+                  key: PINECONE_API_KEY
+                  optional: true
+          # Celery workers don't have an HTTP endpoint — use exec probe
+          livenessProbe:
+            exec:
+              command:
+                - celery
+                - -A
+                - app.tasks.celery
+                - inspect
+                - ping
+                - -d
+                - celery@$HOSTNAME
+            initialDelaySeconds: 60
+            periodSeconds: 60
+            timeoutSeconds: 10
+            failureThreshold: 3
+      restartPolicy: Always
