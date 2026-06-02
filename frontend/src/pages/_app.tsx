@@ -25,3 +25,6 @@ export default function App({ Component, pageProps }: AppProps) {
     </GoogleOAuthProvider>
   )
 }
+// Disable automatic static optimization globally
+// Required because pages use next/router which needs browser context
+MyApp.getInitialProps = async () => ({ pageProps: {} })

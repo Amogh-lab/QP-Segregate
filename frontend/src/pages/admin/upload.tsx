@@ -49,19 +49,17 @@ export default function AdminUpload() {
   const [loadingCourses, setLoadingCourses] = useState(true)
   
   // Read file type from query parameter, default to 'question_paper'
-  const queryFileType = router.query.type as string
-  const [fileType, setFileType] = useState<'question_paper' | 'syllabus'>(
-    queryFileType === 'syllabus' ? 'syllabus' : 'question_paper'
-  )
+  const [fileType, setFileType] = useState<'question_paper' | 'syllabus'>('question_paper')
 
-  // Update file type when query parameter changes
+  // Update file type when query parameter changes (only after router is ready)
   useEffect(() => {
+    if (!router.isReady) return
     if (router.query.type === 'syllabus') {
       setFileType('syllabus')
     } else if (router.query.type === 'question_paper') {
       setFileType('question_paper')
     }
-  }, [router.query.type])
+  }, [router.isReady, router.query.type])
 
   useEffect(() => {
     if (!user) {
@@ -359,7 +357,6 @@ export default function AdminUpload() {
   }
 
   if (!user) {
-    router.push('/admin/login')
     return null
   }
 
@@ -671,4 +668,8 @@ export default function AdminUpload() {
       </div>
     </>
   )
+}
+
+export async function getServerSideProps() {
+  return { props: {} }
 }
