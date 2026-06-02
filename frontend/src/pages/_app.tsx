@@ -27,4 +27,4 @@ export default function App({ Component, pageProps }: AppProps) {
 }
 // Disable automatic static optimization globally
 // Required because pages use next/router which needs browser context
-MyApp.getInitialProps = async () => ({ pageProps: {} })
+App.getInitialProps = async () => ({ pageProps: {} })
