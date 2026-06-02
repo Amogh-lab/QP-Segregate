@@ -173,23 +173,21 @@ jobs:
       # ── Update image tags to the newly built images ─────────────
       - name: Update backend image
         run: |
-          BACKEND_IMAGE="${{ needs.build-backend.outputs.image }}"
+          ECR_REGISTRY="${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com"
+          BACKEND_IMAGE="$ECR_REGISTRY/$ECR_BACKEND_REPO:${{ github.sha }}"
           kubectl set image deployment/backend \
-            backend=$BACKEND_IMAGE \
-            -n qpaper
+            backend=$BACKEND_IMAGE -n qpaper
           kubectl set image deployment/celery-worker \
-            celery-worker=$BACKEND_IMAGE \
-            -n qpaper
+            celery-worker=$BACKEND_IMAGE -n qpaper
           kubectl set image deployment/celery-beat \
-            celery-beat=$BACKEND_IMAGE \
-            -n qpaper
+            celery-beat=$BACKEND_IMAGE -n qpaper
 
       - name: Update frontend image
         run: |
-          FRONTEND_IMAGE="${{ needs.build-frontend.outputs.image }}"
+          ECR_REGISTRY="${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com"
+          FRONTEND_IMAGE="$ECR_REGISTRY/$ECR_FRONTEND_REPO:${{ github.sha }}"
           kubectl set image deployment/frontend \
-            frontend=$FRONTEND_IMAGE \
-            -n qpaper
+            frontend=$FRONTEND_IMAGE -n qpaper
 
       # ── Wait for rollout to complete ────────────────────────────
       - name: Wait for deployments to roll out
