@@ -34,7 +34,7 @@ RUN pip install --upgrade pip --no-cache-dir \
         -r requirements.txt
 
 # Download spaCy English model
-RUN pip install --no-cache-dir https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.2/en_core_web_sm-3.7.2-py3-none-any.whl
+RUN pip install --no-cache-dir https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.1/en_core_web_sm-3.7.1-py3-none-any.whl
 
 # Copy application source code
 COPY . .
