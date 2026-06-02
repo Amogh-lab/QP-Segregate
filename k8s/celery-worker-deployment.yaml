@@ -36,10 +36,10 @@ spec:
           resources:
             # Workers run OCR + ML models — needs more RAM
             requests:
-              cpu: "1000m"
+              cpu: "300m"
               memory: "2Gi"
             limits:
-              cpu: "2000m"
+              cpu: "500m"
               memory: "4Gi"
           envFrom:
             - configMapRef:
