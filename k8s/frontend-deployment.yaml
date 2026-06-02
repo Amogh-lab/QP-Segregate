@@ -30,7 +30,7 @@ spec:
           image: PLACEHOLDER_FRONTEND_IMAGE
           ports:
             - containerPort: 3000
-          command: ["npm", "start"]
+          command: ["node", "server.js"]
           resources:
             requests:
               cpu: "200m"
