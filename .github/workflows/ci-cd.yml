@@ -193,16 +193,16 @@ jobs:
       - name: Wait for deployments to roll out
         run: |
           echo "⏳ Waiting for backend rollout..."
-          kubectl rollout status deployment/backend -n qpaper --timeout=300s
+          kubectl rollout status deployment/backend -n qpaper --timeout=600s
 
           echo "⏳ Waiting for celery-worker rollout..."
-          kubectl rollout status deployment/celery-worker -n qpaper --timeout=300s
+          kubectl rollout status deployment/celery-worker -n qpaper --timeout=600s
 
           echo "⏳ Waiting for celery-beat rollout..."
           kubectl rollout status deployment/celery-beat -n qpaper --timeout=120s
 
           echo "⏳ Waiting for frontend rollout..."
-          kubectl rollout status deployment/frontend -n qpaper --timeout=300s
+          kubectl rollout status deployment/frontend -n qpaper --timeout=600s
 
       # ── Print the ALB URL after first deploy ───────────────────
       - name: Get ALB URL
