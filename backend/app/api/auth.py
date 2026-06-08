@@ -25,6 +25,35 @@ logger.info("Auth router initialized")
 pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
+# Dummy student login: any @rvce.edu.in email + this password logs in.
+# Account is auto-created on first login. Remove for real auth.
+DUMMY_STUDENT_PASSWORD = "pokemon321"
+
+def get_or_create_dummy_student(db: Session, email: str):
+    """Get student by email, or create one (no password) for dummy login."""
+    user = get_user_by_email(db, email)
+    if user:
+        return user
+    username = email.split("@")[0]
+    base_username = username
+    counter = 1
+    while get_user(db, username):
+        username = f"{base_username}{counter}"
+        counter += 1
+    user = User(
+        username=username,
+        email=email,
+        password_hash=None,
+        display_name=email.split("@")[0],
+        role="STUDENT",
+        is_active=True,
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    sys.stderr.write(f"✅ Created dummy student user: {email}\n")
+    return user
+
 class Token(BaseModel):
     access_token: str
     token_type: str
@@ -245,8 +274,12 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = 
         logger.error(f"🔐 Login attempt - {identifier}: '{form_data.username}', Password length: {len(form_data.password) if form_data.password else 0}")
         sys.stderr.write(f"🔐 Login attempt - {identifier}: '{form_data.username}', Password length: {len(form_data.password) if form_data.password else 0}\n")
         sys.stderr.flush()
-        
-        user = authenticate_user(db, form_data.username, form_data.password, use_email=use_email)
+
+        # Dummy login: any @rvce.edu.in email + DUMMY_STUDENT_PASSWORD logs in
+        if is_email and form_data.password == DUMMY_STUDENT_PASSWORD:
+            user = get_or_create_dummy_student(db, form_data.username)
+        else:
+            user = authenticate_user(db, form_data.username, form_data.password, use_email=use_email)
         if not user:
             print(f"❌ Authentication failed for {identifier.lower()}: '{form_data.username}'", file=sys.stderr)
             # Different error messages for admin (username) vs student (email) login

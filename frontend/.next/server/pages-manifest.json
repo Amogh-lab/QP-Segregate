@@ -2,8 +2,6 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/student/search": "pages/student/search.js",
-  "/student/dashboard": "pages/student/dashboard.js",
-  "/admin/question-bank": "pages/admin/question-bank.js",
-  "/student/bookmarks": "pages/student/bookmarks.js"
+  "/student/login": "pages/student/login.js",
+  "/": "pages/index.js"
 }
