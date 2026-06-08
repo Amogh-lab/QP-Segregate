@@ -138,13 +138,15 @@ node_modules/
 
 # Testing
 /coverage
+coverage/
 
-# Next.js
-/.next/
-/out/
+# Next.js (match at any depth, e.g. frontend/.next/)
+.next/
+out/
+next-env.d.ts
 
 # Production
-/build
+build/
 
 # Misc
 .DS_Store
